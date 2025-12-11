@@ -36,12 +36,12 @@
 ## 🚀 Quick Start
 
 ### Option 1: Use Online (Recommended)
-Visit the hosted version at: **[https://yourusername.github.io/ReMarkable](https://yourusername.github.io/ReMarkable)**
+Visit the hosted version at: **[https://brgrd.github.io/ReMarkAble](https://brgrd.github.io/ReMarkAble)**
 
 ### Option 2: Run Locally
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ReMarkable.git
+git clone https://github.com/brgrd/ReMarkAble.git
 
 # Navigate to the directory
 cd ReMarkable

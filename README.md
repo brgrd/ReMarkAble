@@ -24,11 +24,11 @@
 ## 🚀 Quick Start
 
 ### Use Online
-Visit: **[https://yourusername.github.io/ReMarkable](https://yourusername.github.io/ReMarkable)**
+Visit: **[https://brgrd.github.io/ReMarkAble](https://brgrd.github.io/ReMarkAble)**
 
 ### Run Locally
 ```bash
-git clone https://github.com/yourusername/ReMarkable.git
+git clone https://github.com/brgrd/ReMarkAble.git
 cd ReMarkable
 python -m http.server 8000
 # Visit http://localhost:8000
@@ -211,7 +211,7 @@ Content is stored in browser localStorage:
    git commit -m "Initial commit: ReMarkable markdown formatter"
    
    # Create repository on GitHub, then:
-   git remote add origin https://github.com/yourusername/ReMarkable.git
+   git remote add origin https://github.com/brgrd/ReMarkAble.git
    git branch -M main
    git push -u origin main
    ```
@@ -222,11 +222,7 @@ Content is stored in browser localStorage:
    - Under "Source", select **Deploy from a branch**
    - Select branch: **main** and folder: **/ (root)**
    - Click **Save**
-   - Your site will be live at `https://yourusername.github.io/ReMarkable` in 1-2 minutes
-
-3. **Update README links**
-   - Replace `yourusername` in the README with your actual GitHub username
-   - Commit and push the changes
+   - Your site will be live at `https://brgrd.github.io/ReMarkAble` in 1-2 minutes
 
 ### Making Updates
 

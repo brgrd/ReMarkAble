@@ -70,8 +70,8 @@ function showModal({ title, message, type = 'info', confirmText = 'OK', cancelTe
 
 		// Set icon based on type
 		const icons = {
-			warning: '⚠️',
-			info: 'ℹ️',
+			warning: '!',
+			info: 'i',
 			success: '✓',
 			error: '✕'
 		};
@@ -398,7 +398,7 @@ Contributions are always welcome! Please read the contributing guidelines first.
 
 	contributing: `# Contributing to [Project Name]
 
-First off, thanks for taking the time to contribute! ❤️
+First off, thanks for taking the time to contribute!
 
 ## Code of Conduct
 This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code.
@@ -639,14 +639,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## Type of Change
-- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
-- [ ] ✨ New feature (non-breaking change which adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to change)
-- [ ] 📝 Documentation update
-- [ ] ⚡ Performance improvement
-- [ ] ♻️ Code refactoring
-- [ ] 🔧 Configuration change
-- [ ] 🎨 UI/UX improvement
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to change)
+- [ ] Documentation update
+- [ ] Performance improvement
+- [ ] Code refactoring
+- [ ] Configuration change
+- [ ] UI/UX improvement
 
 ## Changes Made
 <!-- Detailed list of changes -->
@@ -1319,7 +1319,7 @@ function showVariableModal(neededVars, sectionName) {
 		varModal.className = 'custom-modal show';
 		varModal.innerHTML = `
 			<div class="custom-modal-content variable-modal">
-				<div class="custom-modal-icon icon-info">✏️</div>
+				<div class="custom-modal-icon icon-info">i</div>
 				<h3 class="custom-modal-title">Customize ${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)} Section</h3>
 				<p class="custom-modal-message">Fill in your project details (or leave default):</p>
 				<div class="variable-inputs">

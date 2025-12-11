@@ -145,10 +145,10 @@ A clear and concise description of what this project does and who it's for.
 
 \`\`\`bash
 # Clone the repository
-git clone https://github.com/username/repo.git
+git clone https://github.com/{{username}}/{{repo}}.git
 
 # Navigate to directory
-cd repo
+cd {{repo}}
 
 # Install dependencies
 install-command
@@ -227,13 +227,13 @@ test-command --coverage
 
 ### Base URL
 \`\`\`
-https://api.example.com/v1
+{{apiUrl}}
 \`\`\`
 
 ### Authentication
 \`\`\`bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  https://api.example.com/v1/endpoint
+  {{apiUrl}}/endpoint
 \`\`\`
 
 ### Endpoints
@@ -303,7 +303,7 @@ Please make sure to:
 
 ### Reporting Vulnerabilities
 
-If you discover a security vulnerability, please email security@example.com. Do not open a public issue.
+If you discover a security vulnerability, please email {{securityEmail}}. Do not open a public issue.
 
 We take all security reports seriously and will respond within 48 hours.
 
@@ -337,7 +337,7 @@ All notable changes to this project will be documented here.
 
 `,
 
-	quickPR: `# PR: [Title]
+	quickPR: `# PR: {{prTitle}}
 
 ## Overview
 <!-- Brief description of what this PR accomplishes and why -->
@@ -369,13 +369,13 @@ All notable changes to this project will be documented here.
 
 
 ## Related
-**Ticket:** 00000
+**Ticket:** {{ticketNumber}}
 `
 };
 
 // ===== Old Full Templates (kept for reference, not actively used) =====
 const fullTemplates = {
-	readme: `# Project Name
+	readme: `# {{projectName}}
 
 ## Description
 A brief description of what this project does and who it's for.
@@ -415,13 +415,13 @@ Contributions are always welcome! Please read the contributing guidelines first.
 [MIT](https://choosealicense.com/licenses/mit/)
 
 ## Authors
-- [@username](https://github.com/username)
+- [@{{username}}](https://github.com/{{username}})
 
 ## Acknowledgements
 - [Awesome Library](https://github.com/awesome/library)
 `,
 
-	contributing: `# Contributing to [Project Name]
+	contributing: `# Contributing to {{projectName}}
 
 First off, thanks for taking the time to contribute!
 
@@ -459,7 +459,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 \`\`\`bash
 # Clone the repository
-git clone https://github.com/username/project.git
+git clone https://github.com/{{username}}/{{repo}}.git
 
 # Install dependencies
 npm install
@@ -524,14 +524,14 @@ This Code of Conduct is adapted from the [Contributor Covenant](https://www.cont
 
 ## Base URL
 \`\`\`
-https://api.example.com/v1
+{{apiUrl}}
 \`\`\`
 
 ## Authentication
 All API requests require authentication using an API key:
 
 \`\`\`bash
-curl -H "Authorization: Bearer YOUR_API_KEY" https://api.example.com/v1/endpoint
+curl -H "Authorization: Bearer YOUR_API_KEY" {{apiUrl}}/endpoint
 \`\`\`
 
 ## Endpoints
@@ -809,6 +809,9 @@ function init() {
 	// Load saved state
 	loadFromLocalStorage();
 
+	// Load saved template variables
+	loadTemplateVariables();
+
 	// Set up event listeners
 	setupEventListeners();
 
@@ -863,6 +866,29 @@ function setupEventListeners() {
 			insertSectionBtn.disabled = true;
 		}
 	});
+
+	// Template variable inputs - save to localStorage on change
+	const templateVarInputs = [
+		'projectNameInput', 'usernameInput', 'repoInput', 
+		'ticketNumberInput', 'prTitleInput', 'apiUrlInput', 'securityEmailInput'
+	];
+	
+	templateVarInputs.forEach(inputId => {
+		const input = document.getElementById(inputId);
+		if (input) {
+			input.addEventListener('input', () => {
+				const templateVars = {};
+				templateVarInputs.forEach(id => {
+					const el = document.getElementById(id);
+					if (el && el.value) {
+						templateVars[id] = el.value;
+					}
+				});
+				localStorage.setItem('templateVariables', JSON.stringify(templateVars));
+			});
+		}
+	});
+
 
 	// Preview toggle
 	previewToggle.addEventListener('click', togglePreview);
@@ -1269,143 +1295,25 @@ function insertSection(sectionName) {
 
 // ===== Template Variables =====
 async function processTemplateVariables(template, sectionName) {
-	// Check if template contains variables
-	const variables = {
-		'username': /username|yourusername|your-username/gi,
-		'repo': /\brepo\b|repository-name|your-repo/gi,
-		'projectName': /project[ -]?name|your[ -]?project/gi,
-		'authorName': /\[your name\]|author[ -]?name/gi,
-		'email': /security@example\.com|your-email@example\.com/gi,
-		'year': /2025|\d{4}/g
+	// Get values from sidebar form inputs
+	const templateVars = {
+		projectName: document.getElementById('projectNameInput')?.value || 'Project Name',
+		username: document.getElementById('usernameInput')?.value || 'username',
+		repo: document.getElementById('repoInput')?.value || 'repo',
+		ticketNumber: document.getElementById('ticketNumberInput')?.value || '00000',
+		prTitle: document.getElementById('prTitleInput')?.value || '[Title]',
+		apiUrl: document.getElementById('apiUrlInput')?.value || 'https://api.example.com/v1',
+		securityEmail: document.getElementById('securityEmailInput')?.value || 'security@example.com'
 	};
 
-	let hasVariables = false;
-	for (const pattern of Object.values(variables)) {
-		if (pattern.test(template)) {
-			hasVariables = true;
-			break;
-		}
-	}
-
-	if (!hasVariables) {
-		return template;
-	}
-
-	// Get cached values from localStorage
-	const cachedVars = JSON.parse(localStorage.getItem('templateVariables') || '{}');
-
-	// Determine which variables to prompt for
-	const neededVars = {};
-	if (variables.username.test(template)) neededVars.username = cachedVars.username || '';
-	if (variables.repo.test(template)) neededVars.repo = cachedVars.repo || '';
-	if (variables.projectName.test(template)) neededVars.projectName = cachedVars.projectName || '';
-	if (variables.authorName.test(template)) neededVars.authorName = cachedVars.authorName || '';
-	if (variables.email.test(template)) neededVars.email = cachedVars.email || '';
-
-	// Show variable input modal
-	const userVars = await showVariableModal(neededVars, sectionName);
-	if (!userVars) {
-		return template; // User cancelled
-	}
-
-	// Cache the values
-	localStorage.setItem('templateVariables', JSON.stringify(userVars));
-
-	// Replace variables in template
+	// Replace placeholders in template
 	let result = template;
-	if (userVars.username) result = result.replace(variables.username, userVars.username);
-	if (userVars.repo) result = result.replace(variables.repo, userVars.repo);
-	if (userVars.projectName) result = result.replace(variables.projectName, userVars.projectName);
-	if (userVars.authorName) result = result.replace(variables.authorName, userVars.authorName);
-	if (userVars.email) result = result.replace(variables.email, userVars.email);
-	result = result.replace(/2025/g, new Date().getFullYear().toString());
+	Object.keys(templateVars).forEach(key => {
+		const placeholder = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+		result = result.replace(placeholder, templateVars[key]);
+	});
 
 	return result;
-}
-
-function showVariableModal(neededVars, sectionName) {
-	return new Promise((resolve) => {
-		// Create modal HTML
-		const varModal = document.createElement('div');
-		varModal.className = 'custom-modal show';
-		varModal.innerHTML = `
-			<div class="custom-modal-content variable-modal">
-				<div class="custom-modal-icon icon-info">i</div>
-				<h3 class="custom-modal-title">Customize ${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)} Section</h3>
-				<p class="custom-modal-message">Fill in your project details (or leave default):</p>
-				<div class="variable-inputs">
-					${Object.keys(neededVars).map(key => {
-			const labels = {
-				username: 'GitHub Username',
-				repo: 'Repository Name',
-				projectName: 'Project Name',
-				authorName: 'Author Name',
-				email: 'Email Address'
-			};
-			const placeholders = {
-				username: 'username',
-				repo: 'my-project',
-				projectName: 'My Project',
-				authorName: 'Your Name',
-				email: 'email@example.com'
-			};
-			return `
-							<div class="variable-input-group">
-								<label>${labels[key]}</label>
-								<input type="text" id="var-${key}" value="${neededVars[key]}" placeholder="${placeholders[key]}" />
-							</div>
-						`;
-		}).join('')}
-				</div>
-				<div class="custom-modal-buttons">
-					<button class="modal-btn modal-btn-cancel" id="varModalCancel">Cancel</button>
-					<button class="modal-btn modal-btn-confirm" id="varModalConfirm">Insert Section</button>
-				</div>
-			</div>
-		`;
-
-		document.body.appendChild(varModal);
-
-		// Focus first input
-		setTimeout(() => {
-			const firstInput = varModal.querySelector('input');
-			if (firstInput) firstInput.focus();
-		}, 100);
-
-		// Handle confirm
-		document.getElementById('varModalConfirm').addEventListener('click', () => {
-			const result = {};
-			Object.keys(neededVars).forEach(key => {
-				const input = document.getElementById(`var-${key}`);
-				result[key] = input.value.trim() || neededVars[key];
-			});
-			document.body.removeChild(varModal);
-			resolve(result);
-		});
-
-		// Handle cancel
-		document.getElementById('varModalCancel').addEventListener('click', () => {
-			document.body.removeChild(varModal);
-			resolve(null);
-		});
-
-		// Handle backdrop click
-		varModal.addEventListener('click', (e) => {
-			if (e.target === varModal) {
-				document.body.removeChild(varModal);
-				resolve(null);
-			}
-		});
-
-		// Handle Enter key
-		varModal.querySelectorAll('input').forEach(input => {
-			input.addEventListener('keypress', (e) => {
-				if (e.key === 'Enter') {
-					document.getElementById('varModalConfirm').click();
-				}
-			});
-		});
-	});
 }
 
 // ===== Template Insertion (for backward compatibility) =====
@@ -1842,6 +1750,25 @@ function loadFromLocalStorage() {
 		sidebar.classList.remove('show');
 	}
 }
+
+function loadTemplateVariables() {
+	const savedVars = localStorage.getItem('templateVariables');
+	if (savedVars) {
+		try {
+			const vars = JSON.parse(savedVars);
+			if (vars.projectNameInput) document.getElementById('projectNameInput').value = vars.projectNameInput;
+			if (vars.usernameInput) document.getElementById('usernameInput').value = vars.usernameInput;
+			if (vars.repoInput) document.getElementById('repoInput').value = vars.repoInput;
+			if (vars.ticketNumberInput) document.getElementById('ticketNumberInput').value = vars.ticketNumberInput;
+			if (vars.prTitleInput) document.getElementById('prTitleInput').value = vars.prTitleInput;
+			if (vars.apiUrlInput) document.getElementById('apiUrlInput').value = vars.apiUrlInput;
+			if (vars.securityEmailInput) document.getElementById('securityEmailInput').value = vars.securityEmailInput;
+		} catch (e) {
+			console.error('Error loading template variables:', e);
+		}
+	}
+}
+
 
 // ===== Keyboard Shortcuts =====
 function handleKeyboardShortcuts(e) {

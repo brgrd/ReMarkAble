@@ -40,7 +40,7 @@ python -m http.server 8000
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl + F` | Find & Replace |
+| `Ctrl + H` | Find & Replace |
 | `Ctrl + S` | Save |
 | `Ctrl + E` | Export to .md |
 | `Ctrl + P` | Toggle preview |
@@ -164,6 +164,7 @@ An "Undo" button appears for 5 seconds after prettifying.
 
 | Shortcut | Action |
 |----------|--------|
+| `Ctrl + H` | Find & Replace |
 | `Ctrl + S` | Save manually |
 | `Ctrl + C` | Copy markdown (when editor focused) |
 | `Ctrl + P` | Toggle preview pane |

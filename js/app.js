@@ -32,6 +32,7 @@ const formatButtons = document.querySelectorAll('.format-btn');
 // Word Count and Copy Button
 const wordCountDisplay = document.getElementById('wordCount');
 const copyMarkdownBtn = document.getElementById('copyMarkdownBtn');
+const findReplaceBtn = document.getElementById('findReplaceBtn');
 
 // Drag and Drop
 const dropZone = document.getElementById('dropZone');
@@ -535,6 +536,9 @@ function setupEventListeners() {
 
 	// Copy
 	copyMarkdownBtn.addEventListener('click', copyMarkdown);
+
+	// Find & Replace Button
+	findReplaceBtn.addEventListener('click', openFindReplace);
 
 	// Undo Action
 	undoActionBtn.addEventListener('click', undoAction);
@@ -1446,8 +1450,8 @@ function handleKeyboardShortcuts(e) {
 		return;
 	}
 
-	// Ctrl+F: Find & Replace
-	if (e.ctrlKey && e.key === 'f') {
+	// Ctrl+H: Find & Replace
+	if (e.ctrlKey && e.key === 'h') {
 		e.preventDefault();
 		openFindReplace();
 		return;

@@ -26,7 +26,7 @@
 	--font-mono: 'Fira Code', 'Consolas', 'Monaco', monospace;
 
 	/* Sidebar Width */
-	--sidebar-width: 220px;
+	--sidebar-width: 280px;
 	--sidebar-collapsed: 0px;
 
 	/* Transitions */
@@ -221,18 +221,34 @@ body {
 	width: 100%;
 	background: var(--bg-tertiary);
 	border: 1px solid var(--border-subtle);
-	color: var(--text-primary);
+	color: transparent;
 	padding: 10px 12px;
 	border-radius: 6px;
 	font-family: var(--font-ui);
 	font-size: 13px;
 	cursor: pointer;
 	transition: all var(--transition-fast);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23b0b0b0' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 12px;
+	padding-right: 36px;
+}
+
+.template-dropdown:valid {
+	color: var(--text-primary);
+	background-image: none;
+	padding-right: 12px;
+	background-position: right 10px center;
+}
+
+.template-dropdown option:first-child {
+	display: none;
 }
 
 .template-dropdown:hover {
 	border-color: var(--accent-primary);
-	background: var(--bg-hover);
+	background-color: var(--bg-hover);
 }
 
 .template-dropdown:focus {
@@ -284,6 +300,10 @@ body {
 .actions-section,
 .template-vars-section {
 	margin-bottom: 24px;
+	padding: 12px;
+	background: var(--bg-tertiary);
+	border-radius: 8px;
+	border: 1px solid var(--border-subtle);
 }
 
 /* Template Variables Form */

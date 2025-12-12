@@ -221,13 +221,16 @@ body {
 	width: 100%;
 	background: var(--bg-tertiary);
 	border: 1px solid var(--border-subtle);
-	color: transparent;
+	color: var(--text-muted);
 	padding: 10px 12px;
 	border-radius: 6px;
 	font-family: var(--font-ui);
 	font-size: 13px;
 	cursor: pointer;
 	transition: all var(--transition-fast);
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
 	background-repeat: no-repeat;
 	background-position: center;
@@ -240,10 +243,7 @@ body {
 	background-image: none;
 	padding-right: 12px;
 	background-position: right 10px center;
-}
-
-.template-dropdown option:first-child {
-	display: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
 }
 
 .template-dropdown:hover {
@@ -260,6 +260,11 @@ body {
 .template-dropdown option {
 	background: var(--bg-secondary);
 	color: var(--text-primary);
+}
+
+.template-dropdown option.template-option-added {
+	color: #ff6666;
+	font-weight: 600;
 }
 
 .insert-template-btn {
@@ -427,52 +432,56 @@ body {
 }
 
 .action-btn {
-	background: var(--bg-tertiary);
-	border: 1px solid var(--border-subtle);
+	width: 100%;
+	background: var(--bg-hover);
+	border: 1px solid var(--border-color);
 	color: var(--text-primary);
-	padding: 10px 12px;
+	padding: 12px 16px;
 	border-radius: 6px;
 	cursor: pointer;
 	font-family: var(--font-ui);
 	font-size: 13px;
-	text-align: left;
+	font-weight: 600;
 	transition: all var(--transition-fast);
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	gap: 8px;
-	white-space: nowrap;
+}
+
+.action-btn:hover:not(:disabled) {
+	background: var(--bg-tertiary);
+	border-color: var(--accent-primary);
+	color: var(--accent-primary);
+	transform: translateY(-1px);
+	box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.action-btn:active:not(:disabled) {
+	transform: translateY(0);
 }
 
 .action-btn-undo {
 	border-color: var(--accent-primary);
+	color: var(--accent-primary);
 }
 
-.action-btn-undo:hover {
+.action-btn-undo:hover:not(:disabled) {
 	background: var(--accent-primary);
 	border-color: var(--accent-primary);
-	color: white;
+	color: #0f0f0f;
 }
 
 .action-btn-danger {
 	border-color: #ff4444;
+	color: #ff9999;
 }
 
-.action-btn-danger:hover {
+.action-btn-danger:hover:not(:disabled) {
 	background: #ff4444;
 	border-color: #ff4444;
-	color: white;
-	transform: translateX(2px);
-}
-
-.action-btn:hover {
-	background: var(--bg-hover);
-	border-color: var(--accent-primary);
-	color: var(--accent-light);
-	transform: translateX(2px);
-}
-
-.action-btn:active {
-	transform: translateX(2px) scale(0.98);
+	color: #ffffff;
+	box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3);
 }
 
 .sidebar-footer {
@@ -1029,21 +1038,32 @@ body {
 
 .close-shortcuts {
 	width: 100%;
-	background: var(--accent-primary);
-	color: white;
-	border: none;
-	padding: 12px;
+	background: var(--bg-hover);
+	color: var(--text-primary);
+	border: 1px solid var(--border-color);
+	padding: 12px 16px;
 	border-radius: 6px;
 	cursor: pointer;
 	font-family: var(--font-ui);
-	font-size: 14px;
-	font-weight: 500;
+	font-size: 13px;
+	font-weight: 600;
 	transition: all var(--transition-fast);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
 }
 
 .close-shortcuts:hover {
-	background: var(--accent-hover);
-	transform: scale(1.02);
+	background: var(--bg-tertiary);
+	border-color: var(--accent-primary);
+	color: var(--accent-primary);
+	transform: translateY(-1px);
+	box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.close-shortcuts:active {
+	transform: translateY(0);
 }
 
 /* ===== Responsive Design ===== */
@@ -1214,6 +1234,30 @@ body {
 	color: var(--text-secondary);
 	margin: 0 0 24px 0;
 	line-height: 1.5;
+	white-space: normal;
+}
+
+.validation-list {
+	list-style: none;
+	padding-left: 0;
+	margin: 12px 0 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	color: var(--text-primary);
+}
+
+.validation-list li {
+	padding: 8px 10px;
+	background: var(--bg-tertiary);
+	border: 1px solid var(--border-subtle);
+	border-radius: 6px;
+	font-size: 13px;
+}
+
+.validation-list strong {
+	color: var(--accent-primary);
+	margin-right: 4px;
 }
 
 .custom-modal-buttons {
@@ -1245,20 +1289,39 @@ body {
 }
 
 .modal-btn-confirm {
-	background: var(--accent-primary);
-	color: white;
+	background: var(--bg-hover);
+	border: 1px solid var(--border-color);
+	color: var(--text-primary);
+	font-weight: 600;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
 }
 
 .modal-btn-confirm:hover {
-	background: var(--accent-hover);
+	background: var(--bg-tertiary);
+	border-color: var(--accent-primary);
+	color: var(--accent-primary);
+	transform: translateY(-1px);
+	box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.modal-btn-confirm:active {
+	transform: translateY(0);
 }
 
 .modal-btn-confirm.btn-danger {
 	background: #ff4444;
+	border-color: #ff4444;
+	color: #ffffff;
 }
 
 .modal-btn-confirm.btn-danger:hover {
 	background: #ff6666;
+	border-color: #ff6666;
+	color: #ffffff;
+	box-shadow: none;
 }
 
 /* Hide cancel button for alert-only modals */
@@ -1372,10 +1435,41 @@ body {
 }
 
 .checkbox-label input[type="checkbox"] {
+	position: relative;
 	cursor: pointer;
-	width: 16px;
-	height: 16px;
-	accent-color: var(--accent-primary);
+	width: 18px;
+	height: 18px;
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	border: 1px solid var(--border-color);
+	border-radius: 4px;
+	background: var(--bg-primary);
+	transition: all var(--transition-fast);
+}
+
+.checkbox-label input[type="checkbox"]::after {
+	content: '';
+	position: absolute;
+	top: 3px;
+	left: 6px;
+	width: 4px;
+	height: 8px;
+	border: solid var(--bg-primary);
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+	opacity: 0;
+	transition: opacity var(--transition-fast);
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+	background: var(--accent-primary);
+	border-color: var(--accent-primary);
+	box-shadow: 0 2px 6px var(--accent-glow);
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+	opacity: 1;
 }
 
 .find-replace-status {

@@ -33,6 +33,7 @@ const formatButtons = document.querySelectorAll('.format-btn');
 const wordCountDisplay = document.getElementById('wordCount');
 const copyMarkdownBtn = document.getElementById('copyMarkdownBtn');
 const findReplaceBtn = document.getElementById('findReplaceBtn');
+const validateBtn = document.getElementById('validateBtn');
 
 // Drag and Drop
 const dropZone = document.getElementById('dropZone');
@@ -64,7 +65,7 @@ let findMatches = [];
 let currentMatchIndex = -1;
 
 // ===== Custom Modal Functions =====
-function showModal({ title, message, type = 'info', confirmText = 'OK', cancelText = 'Cancel', showCancel = false, danger = false }) {
+function showModal({ title, message = '', type = 'info', confirmText = 'OK', cancelText = 'Cancel', showCancel = false, danger = false }) {
 	return new Promise((resolve) => {
 		editorState.modalResolve = resolve;
 
@@ -79,7 +80,7 @@ function showModal({ title, message, type = 'info', confirmText = 'OK', cancelTe
 		modalIcon.textContent = icons[type] || icons.info;
 		modalIcon.className = `custom-modal-icon icon-${type}`;
 		modalTitle.textContent = title;
-		modalMessage.textContent = message;
+		modalMessage.innerHTML = message;
 		modalConfirm.textContent = confirmText;
 		modalCancel.textContent = cancelText;
 
@@ -427,11 +428,36 @@ function setupEventListeners() {
 	// Template dropdown and insert button
 	const templateDropdown = document.getElementById('templateDropdown');
 	const insertTemplateBtn = document.getElementById('insertTemplateBtn');
+	const templateOptions = templateDropdown ? Array.from(templateDropdown.options) : [];
 
-	// Update dropdown options with checkmarks for existing templates
+	templateOptions.forEach(option => {
+		if (!option.dataset.label) {
+			option.dataset.label = option.textContent.trim();
+		}
+	});
+
+	// Update dropdown option labels to show which templates exist
 	function updateTemplateDropdown() {
 		const analysis = analyzeDocument();
 		const options = templateDropdown.querySelectorAll('option');
+
+		options.forEach(option => {
+			const baseLabel = option.dataset.label ?? option.textContent.trim();
+
+			if (!option.value) {
+				option.textContent = baseLabel;
+				option.classList.remove('template-option-added');
+				return;
+			}
+
+			if (analysis[option.value]) {
+				option.textContent = `${baseLabel} \u2022`;
+				option.classList.add('template-option-added');
+			} else {
+				option.textContent = baseLabel;
+				option.classList.remove('template-option-added');
+			}
+		});
 		
 		// Check if selected template already exists
 		if (templateDropdown.value && analysis[templateDropdown.value]) {
@@ -453,7 +479,6 @@ function setupEventListeners() {
 			const selectedValue = templateDropdown.value;
 			insertTemplate(selectedValue);
 			insertTemplateBtn.disabled = true;
-			// Keep the dropdown value so the checkmark appears, don't clear it yet
 		}
 	});
 
@@ -539,6 +564,9 @@ function setupEventListeners() {
 
 	// Find & Replace Button
 	findReplaceBtn.addEventListener('click', openFindReplace);
+
+	// Validate Markdown
+	validateBtn.addEventListener('click', validateMarkdown);
 
 	// Undo Action
 	undoActionBtn.addEventListener('click', undoAction);
@@ -919,10 +947,10 @@ function insertTemplate(templateName) {
 		// Trigger update and refresh template indicators
 		handleEditorInput();
 
-		// Update dropdown checkmarks to reflect newly inserted template
+		// Update dropdown labels to reflect newly inserted template
 		updateTemplateDropdown();
 
-		// Clear the dropdown now that the template is inserted and checkmark is visible
+		// Reset dropdown selection after insertion
 		templateDropdown.value = '';
 		insertTemplateBtn.disabled = true;
 
@@ -1306,6 +1334,139 @@ async function copyMarkdown() {
 			type: 'error'
 		});
 	}
+}
+
+// ===== Markdown Validation =====
+function validateMarkdown() {
+	const content = editor.value;
+	if (!content.trim()) {
+		showModal({
+			title: 'Nothing to Validate',
+			message: 'Please write some markdown first.',
+			type: 'info'
+		});
+		return;
+	}
+
+	const issues = findMarkdownIssues(content);
+	if (issues.length === 0) {
+		showModal({
+			title: 'Markdown Looks Good',
+			message: 'No common markdown formatting issues detected.',
+			type: 'success',
+			confirmText: 'Close'
+		});
+		return;
+	}
+
+	const listItems = issues.map(issue => {
+		const lineInfo = issue.line ? `<strong>Line ${issue.line}:</strong> ` : '';
+		return `<li>${lineInfo}${issue.message}</li>`;
+	}).join('');
+
+	showModal({
+		title: 'Markdown Validation',
+		message: `<p>Found ${issues.length} issue${issues.length > 1 ? 's' : ''}. Review the details below:</p><ul class="validation-list">${listItems}</ul>`,
+		type: 'warning',
+		confirmText: 'Close'
+	});
+}
+
+function findMarkdownIssues(content) {
+	const lines = content.split('\n');
+	const issues = [];
+	let inBacktickFence = false;
+	let backtickFenceLine = null;
+	let inTildeFence = false;
+	let tildeFenceLine = null;
+
+	lines.forEach((line, index) => {
+		const lineNumber = index + 1;
+		const trimmed = line.trim();
+		const normalizedLine = line.replace(/^\s+/, '');
+		const isBacktickFence = trimmed.startsWith('```');
+		const isTildeFence = trimmed.startsWith('~~~');
+
+		if (isBacktickFence && !inTildeFence) {
+			if (!inBacktickFence) {
+				inBacktickFence = true;
+				backtickFenceLine = lineNumber;
+			} else {
+				inBacktickFence = false;
+				backtickFenceLine = null;
+			}
+			return;
+		}
+
+		if (isTildeFence && !inBacktickFence) {
+			if (!inTildeFence) {
+				inTildeFence = true;
+				tildeFenceLine = lineNumber;
+			} else {
+				inTildeFence = false;
+				tildeFenceLine = null;
+			}
+			return;
+		}
+
+		if (inBacktickFence || inTildeFence) {
+			return;
+		}
+
+		if (/^#{1,6}/.test(normalizedLine) && !/^#{1,6}\s/.test(normalizedLine)) {
+			issues.push({ line: lineNumber, message: 'Add a space after the # characters in headings.' });
+		}
+
+		const listMarkerPattern = /^[ \t]*(?:\*(?!\*)|\+(?!\+)|-(?!-))/;
+		const listMarkerMatch = line.match(listMarkerPattern);
+		if (listMarkerMatch) {
+			const remainder = line.slice(listMarkerMatch[0].length);
+			const hasContent = remainder.trim().length > 0;
+			if (hasContent && !/^\s/.test(remainder)) {
+				issues.push({ line: lineNumber, message: 'List markers (-, *, +) need a space before the text.' });
+			}
+		}
+
+		const numberedListMatch = line.match(/^[ \t]*\d+\./);
+		if (numberedListMatch) {
+			const remainder = line.slice(numberedListMatch[0].length);
+			const hasContent = remainder.trim().length > 0;
+			if (hasContent && !/^\s/.test(remainder)) {
+				issues.push({ line: lineNumber, message: 'Numbered lists need a space after the period.' });
+			}
+		}
+
+		if (/^[ \t]*>/.test(normalizedLine) && !/^[ \t]*>\s/.test(normalizedLine)) {
+			issues.push({ line: lineNumber, message: 'Add a space after the blockquote (>) marker.' });
+		}
+
+		if (/^[ \t]*-\s\[[ xX]\]/.test(line) && !/^[ \t]*-\s\[[ xX]\]\s/.test(line)) {
+			issues.push({ line: lineNumber, message: 'Add a space after task list checkboxes.' });
+		}
+
+		if (/^\t+/.test(line)) {
+			issues.push({ line: lineNumber, message: 'Replace leading tabs with spaces for consistent rendering.' });
+		}
+
+		const trailingWhitespace = line.match(/[ \t]+$/);
+		if (trailingWhitespace && trailingWhitespace[0].length > 2) {
+			issues.push({ line: lineNumber, message: 'Remove trailing spaces at the end of the line.' });
+		}
+
+		if (/\[[^\]]+\]\(\s*\)/.test(line)) {
+			issues.push({ line: lineNumber, message: 'Links should contain a destination URL.' });
+		}
+	});
+
+	if (inBacktickFence) {
+		issues.push({ line: backtickFenceLine, message: 'Code fence opened with ``` is not closed.' });
+	}
+
+	if (inTildeFence) {
+		issues.push({ line: tildeFenceLine, message: 'Code fence opened with ~~~ is not closed.' });
+	}
+
+	return issues;
 }
 
 // ===== Sidebar Toggle =====

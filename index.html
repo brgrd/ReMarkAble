@@ -216,9 +216,9 @@
 				<section class="templates-section">
 					<h2 class="section-title">Templates</h2>
 					<div class="template-controls">
-						<select id="templateDropdown" class="template-dropdown" required>
-							<option value=""></option>
-							<option value="quickPR">Quick PR Template</option>
+							<select id="templateDropdown" class="template-dropdown" required>
+								<option value="" selected hidden></option>
+							<option value="quickPR">PR</option>
 							<option value="badges">Badges</option>
 							<option value="description">Description</option>
 							<option value="quickstart">Quick Start</option>
@@ -284,6 +284,14 @@
 								<path d="M22 5h-4" />
 							</svg>
 							Prettify
+						</button>
+						<button id="validateBtn" class="action-btn">
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+								stroke-width="2">
+								<path d="M9 11l3 3L22 4" />
+								<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+							</svg>
+							Validate
 						</button>
 						<button id="exportBtn" class="action-btn">
 							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"

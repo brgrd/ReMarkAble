@@ -12,7 +12,7 @@
 - **Find & Replace** - Sidebar search with replace, case-sensitive, and whole-word options
 - **16 Section Templates** - Pre-built documentation sections
 - **Smart Document Analysis** - Detects existing/missing sections
-- **Formatting Toolbar** - 21 GitHub/Azure DevOps compatible tools
+- **Formatting Toolbar** - 21 built-in tools
 - **Prettify + Validate** - One-click formatter and common-issue checker
 - **Undo System** - 50-state history for all actions
 - **Word Count** - Live statistics (words, characters, lines)
@@ -43,7 +43,6 @@ python -m http.server 8000
 | `Ctrl + H` | Find & Replace |
 | `Ctrl + S` | Save |
 | `Ctrl + E` | Export to .md |
-| `Ctrl + P` | Toggle preview |
 | `Ctrl + Shift + F` | Prettify |
 | `Ctrl + Z` | Undo |
 | `Ctrl + /` | Show shortcuts |
@@ -86,15 +85,15 @@ remarkable/
 ### Document Enhancement
 When you upload an existing README or start typing:
 - The Templates dropdown indicates which standard sections are already present (subtle red dot)
-- Select a missing section and click **Insert** to add it in the logical position
-- Sections insert in conventional order (Badges → Description → Installation → ... → Changelog)
-- Duplicate sections are prevented; selecting an existing one turns **Insert** red and shows a warning
+- Select any section and click **Insert** to add it in a logical position
+- Sections insert based on the existing document flow and conventional order (Badges → Description → Installation → ... → Changelog)
+- Existing sections are still marked so you can see what’s already in use, but insertion is allowed for repeated headings.
 
 ### Template Variables
 Customize 12 template variables in the sidebar that auto-populate placeholders:
 - **Project Name** - Used in badges and PR templates
-- **GitHub Username** - For clone URLs and repository links
-- **Repository Name** - For GitHub/repo references
+- **Username** - Used in clone URLs and repository links
+- **Repository Name** - Used in repo references
 - **Ticket Number** - For tracking in PR templates
 - **PR Title** - Quick PR template header
 - **API Base URL** - For API documentation sections
@@ -146,7 +145,7 @@ Choose from 16 modern documentation sections:
 - **Changelog** - Version history format
 
 ### Formatting Tools
-21 GitHub/Azure DevOps compatible formatting options:
+21 formatting options:
 - Headers: H1–H5
 - Text: **Bold**, *Italic*, ~~Strikethrough~~, ==Highlight== (flavor-specific)
 - Code: `inline code`, fenced code blocks

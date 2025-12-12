@@ -28,6 +28,7 @@ const undoBtn = document.getElementById('undoBtn');
 const shortcutsModal = document.getElementById('shortcutsModal');
 const closeShortcuts = document.getElementById('closeShortcuts');
 const formatButtons = document.querySelectorAll('.format-btn');
+const shortcutsHint = document.getElementById('shortcutsHint');
 
 // Word Count and Copy Button
 const wordCountDisplay = document.getElementById('wordCount');
@@ -240,15 +241,7 @@ function setupEventListeners() {
 			}
 		});
 		
-		// Check if selected template already exists
-		if (templateDropdown.value && analysis[templateDropdown.value]) {
-			insertTemplateBtn.classList.add('template-exists');
-			insertTemplateBtn.title = 'Template already exists in document';
-		} else {
-			insertTemplateBtn.classList.remove('template-exists');
-			insertTemplateBtn.title = '';
 		}
-	}
 
 	templateDropdown.addEventListener('change', () => {
 		insertTemplateBtn.disabled = !templateDropdown.value;
@@ -361,6 +354,11 @@ function setupEventListeners() {
 		shortcutsModal.classList.remove('show');
 	});
 
+	// Visible shortcuts hint
+	shortcutsHint?.addEventListener('click', () => {
+		shortcutsModal.classList.toggle('show');
+	});
+
 	// Click outside to close shortcuts modal
 	shortcutsModal.addEventListener('click', (e) => {
 		if (e.target === shortcutsModal) {
@@ -407,12 +405,8 @@ function handleEditorInput() {
 // Preview/wordcount/scroll logic is handled by previewController.
 
 // ===== Document Analysis =====
-function analyzeDocument() {
-	const content = editor.value.toLowerCase();
-	const lines = editor.value.split('\n');
-
-	// Define section patterns and their variations
-	const sectionPatterns = {
+function getSectionPatterns() {
+	return {
 		badges: [/!\[.*?\]\(https:\/\/img\.shields\.io/i, /badge/i, /build.*status/i, /coverage/i],
 		description: [/^##?\s*(description|about|overview)/i, /^##?\s*what is/i],
 		quickstart: [/^##?\s*(quick start|quickstart|getting started)/i],
@@ -428,12 +422,16 @@ function analyzeDocument() {
 		security: [/^##?\s*(security|vulnerab)/i],
 		license: [/^##?\s*(license)/i, /^## license/i, /mit license/i, /apache/i],
 		changelog: [/^##?\s*(changelog|releases|history)/i, /^## changelog/i],
-		quickPR: [/^##?\s*(technical changes)/i, /key changes/i]
+		quickPR: [/^#\s*pr:/i, /^##?\s*(technical changes)/i, /key changes/i]
 	};
+}
 
+function analyzeDocument() {
+	const content = editor.value.toLowerCase();
+	const lines = editor.value.split('\n');
+	const sectionPatterns = getSectionPatterns();
 	const foundSections = {};
 
-	// Check each section pattern
 	for (const [section, patterns] of Object.entries(sectionPatterns)) {
 		foundSections[section] = false;
 
@@ -442,7 +440,7 @@ function analyzeDocument() {
 				foundSections[section] = true;
 				break;
 			}
-			// Also check line by line for header patterns
+
 			for (const line of lines) {
 				if (pattern.test(line)) {
 					foundSections[section] = true;
@@ -456,34 +454,81 @@ function analyzeDocument() {
 	return foundSections;
 }
 
+function getSectionOccurrences(lines) {
+	const sectionPatterns = getSectionPatterns();
+	const occurrences = {};
+	for (const section of Object.keys(sectionPatterns)) {
+		occurrences[section] = [];
+	}
+	lines.forEach((line, index) => {
+		for (const [section, patterns] of Object.entries(sectionPatterns)) {
+			for (const pattern of patterns) {
+				if (pattern.test(line)) {
+					occurrences[section].push(index);
+					break;
+				}
+			}
+		}
+	});
+	return occurrences;
+}
+
+function charPosAtLineStart(lines, lineIndex) {
+	if (lineIndex <= 0) return 0;
+	return lines.slice(0, lineIndex).join('\n').length + 1;
+}
+
 function findInsertionPoint(templateName) {
 	const content = editor.value;
 	const lines = content.split('\n');
 	const templateIndex = templateOrder.indexOf(templateName);
 
 	if (templateIndex === -1) {
-		// Template not in order, append at end
 		return content.length;
 	}
 
-	// Find templates that should come after this one
-	const laterTemplates = templateOrder.slice(templateIndex + 1);
+	const occurrences = getSectionOccurrences(lines);
 
-	// Look for the first header of a later template
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i].toLowerCase();
-
-		for (const laterTemplate of laterTemplates) {
-			// Simple pattern matching - check if line starts with ## and contains template keyword
-			if (line.match(/^##?\s+/) && line.includes(laterTemplate.replace(/([A-Z])/g, ' $1').trim().toLowerCase())) {
-				// Found a later template, insert before it
-				const position = lines.slice(0, i).join('\n').length;
-				return position > 0 ? position + 1 : 0;
+	let lastBeforeLine = null;
+	for (let i = 0; i < templateIndex; i++) {
+		const section = templateOrder[i];
+		const sectionOccurrences = occurrences[section];
+		if (sectionOccurrences && sectionOccurrences.length > 0) {
+			const lastOccurrence = sectionOccurrences[sectionOccurrences.length - 1];
+			if (lastBeforeLine === null || lastOccurrence > lastBeforeLine) {
+				lastBeforeLine = lastOccurrence;
 			}
 		}
 	}
 
-	// No later template found, insert at end
+	let firstAfterLine = null;
+	for (let i = templateIndex + 1; i < templateOrder.length; i++) {
+		const section = templateOrder[i];
+		const sectionOccurrences = occurrences[section];
+		if (sectionOccurrences && sectionOccurrences.length > 0) {
+			const firstOccurrence = sectionOccurrences[0];
+			if (firstAfterLine === null || firstOccurrence < firstAfterLine) {
+				firstAfterLine = firstOccurrence;
+			}
+		}
+	}
+
+	if (lastBeforeLine !== null) {
+		const afterPos = (lastBeforeLine + 1 < lines.length)
+			? charPosAtLineStart(lines, lastBeforeLine + 1)
+			: content.length;
+
+		if (firstAfterLine !== null) {
+			const beforePos = charPosAtLineStart(lines, firstAfterLine);
+			return Math.min(afterPos, beforePos);
+		}
+		return afterPos;
+	}
+
+	if (firstAfterLine !== null) {
+		return charPosAtLineStart(lines, firstAfterLine);
+	}
+
 	return content.length;
 }
 
@@ -491,15 +536,7 @@ function insertTemplate(templateName) {
 	const template = sections[templateName];
 	if (!template) return;
 
-	// Check if template already exists
-	const analysis = analyzeDocument();
-	if (analysis[templateName]) {
-		// Template exists - just scroll to it or give feedback
-		showToast('This template already exists in your document', 3000);
-		return;
-	}
-
-	const currentContent = editor.value;
+		const currentContent = editor.value;
 
 	// Save current state to history before making changes
 	saveToHistory();
@@ -721,24 +758,10 @@ function handleKeyboardShortcuts(e) {
 		return;
 	}
 
-	// Ctrl+P: Toggle preview
-	if (e.ctrlKey && e.key === 'p') {
-		e.preventDefault();
-		togglePreview();
-		return;
-	}
-
 	// Ctrl+E: Export
 	if (e.ctrlKey && e.key === 'e') {
 		e.preventDefault();
 		filesController?.exportMarkdown();
-		return;
-	}
-
-	// Ctrl+B: Toggle sidebar
-	if (e.ctrlKey && e.key === 'b') {
-		e.preventDefault();
-		toggleSidebar();
 		return;
 	}
 

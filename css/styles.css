@@ -306,20 +306,6 @@ body {
 	cursor: not-allowed;
 }
 
-.insert-template-btn.template-exists {
-	background: #cc3333;
-	border-color: #ff4444;
-	color: #ffffff;
-}
-
-.insert-template-btn.template-exists:hover:not(:disabled) {
-	background: #dd4444;
-	border-color: #ff5555;
-	color: #ffffff;
-	transform: translateY(-1px);
-	box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3);
-}
-
 .formatting-section,
 .templates-section,
 .actions-section,
@@ -524,6 +510,34 @@ body {
 	font-size: 11px;
 	color: var(--text-muted);
 	flex-wrap: wrap;
+}
+
+.shortcuts-hint {
+	width: 100%;
+	background: transparent;
+	border: 1px dashed var(--border-subtle);
+	color: var(--text-secondary);
+	padding: 8px 10px;
+	border-radius: 6px;
+	font-family: var(--font-ui);
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	display: flex;
+	justify-content: center;
+	gap: 6px;
+}
+
+.shortcuts-hint-key {
+	color: var(--text-muted);
+	font-weight: 500;
+}
+
+.shortcuts-hint:hover {
+	background: var(--bg-hover);
+	border-color: var(--accent-primary);
+	color: var(--accent-primary);
 }
 
 .count-item {

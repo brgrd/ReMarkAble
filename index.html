@@ -302,15 +302,6 @@
 							</svg>
 							Export
 						</button>
-						<button id="findReplaceBtn" class="action-btn">
-							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-								stroke-width="2">
-								<circle cx="11" cy="11" r="8"></circle>
-								<path d="m21 21-4.35-4.35" />
-								<path d="M11 8v6M8 11h6" />
-							</svg>
-							Find & Replace
-						</button>
 						<button id="copyMarkdownBtn" class="action-btn">
 							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
 								stroke-width="2">
@@ -319,6 +310,39 @@
 							</svg>
 							Copy
 						</button>
+					</div>
+				</section>
+				<section class="find-replace-section">
+					<h2 class="section-title">Find & Replace</h2>
+					<div class="find-replace-panel" id="findReplacePanel">
+						<div class="find-replace-inputs">
+							<div class="input-group">
+								<label for="findInput">Find:</label>
+								<input type="text" id="findInput" placeholder="Search text..." />
+							</div>
+							<div class="input-group">
+								<label for="replaceInput">Replace with:</label>
+								<input type="text" id="replaceInput" placeholder="Replacement text..." />
+							</div>
+							<div class="find-options">
+								<label class="checkbox-label">
+									<input type="checkbox" id="caseSensitive" />
+									<span>Case sensitive</span>
+								</label>
+								<label class="checkbox-label">
+									<input type="checkbox" id="wholeWord" />
+									<span>Whole word</span>
+								</label>
+							</div>
+						</div>
+						<div class="find-replace-status" id="findStatus"></div>
+						<div class="find-replace-buttons">
+							<button id="findPrevBtn" class="find-btn">Previous</button>
+							<button id="findNextBtn" class="find-btn">Next</button>
+							<button id="replaceBtn" class="find-btn">Replace</button>
+							<button id="replaceAllBtn" class="find-btn">Replace All</button>
+							<button id="closeFindReplace" class="close-shortcuts">Clear</button>
+						</div>
 					</div>
 				</section>
 			</div>
@@ -434,41 +458,6 @@
 		</div>
 	</div>
 
-	<!-- Find & Replace Modal -->
-	<div id="findReplaceModal" class="shortcuts-modal">
-		<div class="shortcuts-content find-replace-content">
-			<h2>Find & Replace</h2>
-			<div class="find-replace-inputs">
-				<div class="input-group">
-					<label for="findInput">Find:</label>
-					<input type="text" id="findInput" placeholder="Search text..." />
-				</div>
-				<div class="input-group">
-					<label for="replaceInput">Replace with:</label>
-					<input type="text" id="replaceInput" placeholder="Replacement text..." />
-				</div>
-				<div class="find-options">
-					<label class="checkbox-label">
-						<input type="checkbox" id="caseSensitive" />
-						<span>Case sensitive</span>
-					</label>
-					<label class="checkbox-label">
-						<input type="checkbox" id="wholeWord" />
-						<span>Whole word</span>
-					</label>
-				</div>
-			</div>
-			<div class="find-replace-status" id="findStatus"></div>
-			<div class="find-replace-buttons">
-				<button id="findPrevBtn" class="find-btn">Previous</button>
-				<button id="findNextBtn" class="find-btn">Next</button>
-				<button id="replaceBtn" class="find-btn">Replace</button>
-				<button id="replaceAllBtn" class="find-btn">Replace All</button>
-				<button id="closeFindReplace" class="close-shortcuts">Close</button>
-			</div>
-		</div>
-	</div>
-
 	<!-- Custom Modal -->
 	<div id="customModal" class="custom-modal">
 		<div class="custom-modal-content">
@@ -483,6 +472,8 @@
 	</div>
 
 	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+	<script src="js/templates.js"></script>
+	<script src="js/validation.js"></script>
 	<script src="js/app.js"></script>
 </body>
 

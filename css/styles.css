@@ -1374,10 +1374,29 @@ body {
 	color: var(--text-muted);
 }
 
-/* ===== Find & Replace Modal ===== */
-.find-replace-content {
-	max-width: 550px;
-	text-align: left;
+/* ===== Find & Replace ===== */
+.find-replace-section {
+	margin-bottom: 24px;
+	padding: 12px;
+	background: var(--bg-tertiary);
+	border-radius: 8px;
+	border: 1px solid var(--border-subtle);
+}
+
+.find-replace-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.find-replace-panel .input-group input[type="text"] {
+	background: var(--bg-tertiary);
+	border: 1px solid var(--border-color);
+	color: var(--text-primary);
+}
+
+.find-replace-panel .input-group input[type="text"]:focus {
+	border-color: var(--accent-primary);
 }
 
 .find-replace-inputs {
@@ -1421,8 +1440,13 @@ body {
 
 .find-options {
 	display: flex;
-	gap: 20px;
+	gap: 12px;
+	flex-wrap: wrap;
 	margin-top: 8px;
+	padding: 8px;
+	border: 1px solid var(--border-subtle);
+	border-radius: 6px;
+	background: var(--bg-primary);
 }
 
 .checkbox-label {
@@ -1476,11 +1500,12 @@ body {
 	min-height: 24px;
 	font-size: 12px;
 	color: var(--text-secondary);
-	margin-bottom: 16px;
+	margin-bottom: 4px;
 	padding: 6px 12px;
 	background: var(--bg-primary);
-	border-radius: 4px;
+	border-radius: 6px;
 	text-align: center;
+	border: 1px solid var(--border-subtle);
 }
 
 .find-replace-status.error {
@@ -1492,30 +1517,36 @@ body {
 }
 
 .find-replace-buttons {
-	display: flex;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 8px;
-	flex-wrap: wrap;
 }
 
 .find-btn {
-	background: var(--bg-tertiary);
-	border: 1px solid var(--border-subtle);
+	background: var(--bg-hover);
+	border: 1px solid var(--border-color);
 	color: var(--text-primary);
-	padding: 8px 16px;
+	padding: 10px 14px;
 	border-radius: 6px;
 	cursor: pointer;
 	font-family: var(--font-ui);
 	font-size: 13px;
-	font-weight: 500;
+	font-weight: 600;
 	transition: all var(--transition-fast);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
 }
 
 .find-btn:hover {
-	background: var(--bg-hover);
+	background: var(--bg-tertiary);
 	border-color: var(--accent-primary);
-	color: var(--accent-light);
+	color: var(--accent-primary);
+	transform: translateY(-1px);
+	box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 .find-btn:active {
-	transform: scale(0.98);
+	transform: translateY(0);
 }

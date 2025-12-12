@@ -9,7 +9,7 @@
 
 - **Quick PR Template** - One-click technical change summary for pull requests
 - **Live Preview** - Real-time markdown rendering
-- **Find & Replace** - Search with case-sensitivity and whole-word options
+- **Find & Replace** - Sidebar search with replace, case-sensitive, and whole-word options
 - **16 Section Templates** - Pre-built documentation sections
 - **Smart Document Analysis** - Detects existing/missing sections
 - **16 Formatting Tools** - GitHub/Azure DevOps compatible
@@ -18,7 +18,7 @@
 - **Word Count** - Live statistics (words, characters, lines)
 - **Drag & Drop** - Load files directly into the editor
 - **Auto-Save** - Content persists in localStorage
-- **Dark Theme** - Minimalist black/white design with no accent colors
+- **Dark Theme** - Minimalist grayscale design with subtle indicators
 - **Mobile Responsive** - Works on all devices
 - **100% Offline** - No server required
 - **Template Variables** - 12 customizable variables (project name, username, version, date, build status, etc.)
@@ -63,7 +63,8 @@ ReMarkAble/
 ├── css/
 │   └── styles.css          # All styles
 ├── js/
-│   └── app.js              # All logic
+│   ├── templates.js        # Template content + ordering
+│   └── app.js              # Application logic
 └── README.md               # This file
 ```
 
@@ -76,10 +77,10 @@ ReMarkAble/
 
 ### Document Enhancement
 When you upload an existing README or start typing:
-- Section buttons automatically show **✓** for existing sections and **+** for missing ones
-- Click any **+** button to add that section in the logical position
+- The Templates dropdown indicates which standard sections are already present (subtle red dot)
+- Select a missing section and click **Insert** to add it in the logical position
 - Sections insert in conventional order (Badges → Description → Installation → ... → Changelog)
-- Duplicate sections are prevented with a helpful notification
+- Duplicate sections are prevented; selecting an existing one turns **Insert** red and shows a warning
 
 ### Template Variables
 Customize 12 template variables in the sidebar that auto-populate placeholders:
@@ -96,7 +97,7 @@ Customize 12 template variables in the sidebar that auto-populate placeholders:
 - **Build Version** - For badges and changelog versions (e.g., 1.0.0, 2.1.3)
 - **Date** - Auto-populated with today's date, used in changelogs and PR dates
 
-All values persist in localStorage and are reused across template insertions. Existing templates are marked with a red indicator button in the dropdown.
+All values persist in localStorage and are reused across template insertions.
 
 ### File Operations
 **Upload Methods:**
@@ -113,7 +114,7 @@ All values persist in localStorage and are reused across template insertions. Ex
 - Files are automatically named based on the first H1 heading or timestamp
 
 ### Word Count
-- Live statistics displayed in preview header
+- Live statistics displayed in the sidebar footer
 - Shows: **Words • Characters • Lines**
 - Updates automatically as you type
 
@@ -160,25 +161,11 @@ An "Undo" button appears for 5 seconds after prettifying.
 - Maintains 50 states of history
 - Also works with Ctrl+Z keyboard shortcut
 
-### Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl + H` | Find & Replace |
-| `Ctrl + S` | Save manually |
-| `Ctrl + C` | Copy markdown (when editor focused) |
-| `Ctrl + P` | Toggle preview pane |
-| `Ctrl + E` | Export to .md file |
-| `Ctrl + B` | Toggle sidebar (mobile only) |
-| `Ctrl + Shift + F` | Prettify markdown |
-| `Ctrl + Z` | Undo action (50 state history) |
-| `Ctrl + /` | Show keyboard shortcuts |
-
 ## Theme
 
 ReMarkAble uses a carefully crafted dark theme optimized for long editing sessions:
 - **Base Colors**: Dark grey (#1e1e1e, #2d2d2d)
-- **Accent**: White (#ffffff) - clean and minimal, no primary accent colors
+- **Accent**: White (#ffffff) with subtle red for warnings/indicators
 - **Fonts**: 
   - UI: Space Grotesk (Google Fonts)
   - Code: Fira Code (Google Fonts)
@@ -201,7 +188,7 @@ ReMarkAble uses a carefully crafted dark theme optimized for long editing sessio
 Content is stored in browser localStorage:
 - Maximum ~5-10MB depending on browser
 - Persists across sessions
-- Sidebar state is remembered
+- Sidebar state is remembered on mobile
 
 ## Deployment to GitHub Pages
 

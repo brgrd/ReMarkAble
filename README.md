@@ -12,8 +12,8 @@
 - **Find & Replace** - Sidebar search with replace, case-sensitive, and whole-word options
 - **16 Section Templates** - Pre-built documentation sections
 - **Smart Document Analysis** - Detects existing/missing sections
-- **16 Formatting Tools** - GitHub/Azure DevOps compatible
-- **Smart Prettify** - Auto-format markdown with one click
+- **Formatting Toolbar** - 21 GitHub/Azure DevOps compatible tools
+- **Prettify + Validate** - One-click formatter and common-issue checker
 - **Undo System** - 50-state history for all actions
 - **Word Count** - Live statistics (words, characters, lines)
 - **Drag & Drop** - Load files directly into the editor
@@ -63,8 +63,16 @@ ReMarkAble/
 ├── css/
 │   └── styles.css          # All styles
 ├── js/
+│   ├── app.js              # Application coordinator
 │   ├── templates.js        # Template content + ordering
-│   └── app.js              # Application logic
+│   ├── validation.js       # Markdown validation rules
+│   ├── findReplace.js      # Find/replace controller
+│   ├── formatting.js       # Formatting + prettify controller
+│   ├── preview.js          # Preview + word count + scroll sync
+│   ├── files.js            # Upload, drag/drop, export, copy
+│   ├── persistence.js      # LocalStorage persistence
+│   ├── ui.js               # Modal + toast helpers
+│   └── utils.js            # Shared helpers (debounce)
 └── README.md               # This file
 ```
 
@@ -138,13 +146,14 @@ Choose from 16 modern documentation sections:
 - **Changelog** - Version history format
 
 ### Formatting Tools
-16 GitHub/Azure DevOps compatible formatting options:
-- Text formatting: **Bold**, *Italic*, ~~Strikethrough~~
-- Code: `inline code`, code blocks
-- Headers: H1, H2, H3
+21 GitHub/Azure DevOps compatible formatting options:
+- Headers: H1–H5
+- Text: **Bold**, *Italic*, ~~Strikethrough~~, ==Highlight== (flavor-specific)
+- Code: `inline code`, fenced code blocks
 - Lists: Bullet, Numbered, Task lists
-- Links and Tables
-- Horizontal rules and Collapsible sections
+- Links and Images
+- Tables, horizontal rules, and collapsible `<details>` sections
+- Footnote reference insert (`[^1]`) for Markdown flavors that support it
 
 ### Prettifying Markdown
 Click the **Prettify** button to automatically:

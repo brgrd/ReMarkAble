@@ -424,6 +424,26 @@ body {
 	transform: scale(0.95);
 }
 
+.format-btn-action {
+	border-color: rgba(255, 255, 255, 0.3);
+}
+
+.format-btn-prettify {
+	border-color: rgba(255, 255, 255, 0.5);
+}
+
+.format-btn-validate {
+	border-color: rgba(255, 255, 255, 0.5);
+}
+
+#prettifyBtn.format-btn {
+	grid-column: 1 / 2;
+}
+
+#validateBtn.format-btn {
+	grid-column: 3 / 4;
+}
+
 .section-list,
 .action-list {
 	display: flex;
@@ -951,21 +971,32 @@ body {
 }
 
 .undo-btn {
-	background: var(--accent-primary);
-	color: white;
-	border: none;
+	background: var(--bg-hover);
+	color: var(--text-primary);
+	border: 1px solid var(--border-color);
 	padding: 6px 12px;
-	border-radius: 4px;
+	border-radius: 6px;
 	cursor: pointer;
 	font-family: var(--font-ui);
 	font-size: 13px;
-	font-weight: 500;
+	font-weight: 600;
 	transition: all var(--transition-fast);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
 }
 
 .undo-btn:hover {
-	background: var(--accent-hover);
-	transform: scale(1.05);
+	background: var(--bg-tertiary);
+	border-color: var(--accent-primary);
+	color: var(--accent-primary);
+	transform: translateY(-1px);
+	box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.undo-btn:active {
+	transform: translateY(0);
 }
 
 /* ===== Keyboard Shortcuts Modal ===== */

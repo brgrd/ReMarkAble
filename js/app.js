@@ -59,66 +59,34 @@ const replaceAllBtn = document.getElementById('replaceAllBtn');
 const closeFindReplace = document.getElementById('closeFindReplace');
 const findReplacePanel = document.getElementById('findReplacePanel');
 
-// Find & Replace State
-let findMatches = [];
-let currentMatchIndex = -1;
+let findReplaceController = null;
+let formattingController = null;
+let persistenceController = null;
+let uiController = null;
+let previewController = null;
+let filesController = null;
 
-// ===== Custom Modal Functions =====
-function showModal({ title, message = '', type = 'info', confirmText = 'OK', cancelText = 'Cancel', showCancel = false, danger = false }) {
-	return new Promise((resolve) => {
-		editorState.modalResolve = resolve;
-
-		// Set icon based on type
-		const icons = {
-			warning: '!',
-			info: 'i',
-			success: '✓',
-			error: '✕'
-		};
-
-		modalIcon.textContent = icons[type] || icons.info;
-		modalIcon.className = `custom-modal-icon icon-${type}`;
-		modalTitle.textContent = title;
-		modalMessage.innerHTML = message;
-		modalConfirm.textContent = confirmText;
-		modalCancel.textContent = cancelText;
-
-		// Toggle cancel button visibility
-		if (showCancel) {
-			customModal.classList.remove('alert-only');
-		} else {
-			customModal.classList.add('alert-only');
-		}
-
-		// Set danger style
-		if (danger) {
-			modalConfirm.classList.add('btn-danger');
-		} else {
-			modalConfirm.classList.remove('btn-danger');
-		}
-
-		customModal.classList.add('show');
-		modalConfirm.focus();
-	});
+// ===== UI Delegates =====
+function showModal(options) {
+	return uiController?.showModal
+		? uiController.showModal(options)
+		: Promise.resolve(false);
 }
 
-function hideModal(result) {
-	customModal.classList.remove('show');
-	if (editorState.modalResolve) {
-		editorState.modalResolve(result);
-		editorState.modalResolve = null;
-	}
-}
-
-// Modal event listeners (will be set up in setupEventListeners)
 function setupModalListeners() {
-	modalConfirm.addEventListener('click', () => hideModal(true));
-	modalCancel.addEventListener('click', () => hideModal(false));
-	customModal.addEventListener('click', (e) => {
-		if (e.target === customModal) {
-			hideModal(false);
-		}
-	});
+	uiController?.setupModalListeners?.();
+}
+
+function showToast(message, duration) {
+	uiController?.showToast?.(message, duration);
+}
+
+function showUndoToast() {
+	uiController?.showUndoToast?.();
+}
+
+function hideUndoToast() {
+	uiController?.hideUndoToast?.();
 }
 
 // ===== Template Data =====
@@ -128,36 +96,101 @@ const templateOrder = templateData.templateOrder;
 
 // ===== Initialize =====
 function init() {
-	// Load saved state
-	loadFromLocalStorage();
+	// Initialize UI controller
+	if (window.UI?.createUI) {
+		uiController = window.UI.createUI({
+			editorState,
+			customModal,
+			modalIcon,
+			modalTitle,
+			modalMessage,
+			modalConfirm,
+			modalCancel,
+			undoToast,
+			undoBtn
+		});
+	}
 
-	// Load saved template variables
-	loadTemplateVariables();
+	// Initialize persistence controller and load saved state
+	if (window.Persistence?.createPersistence) {
+		persistenceController = window.Persistence.createPersistence({
+			editor,
+			sidebar,
+			editorState,
+			saveToHistory,
+			showModal
+		});
+		persistenceController.loadContent();
+		persistenceController.loadTemplateVariables();
+	} else {
+		loadFromLocalStorage();
+		loadTemplateVariables();
+	}
 
 	// Set up event listeners
 	setupEventListeners();
 
-	// Set up drag and drop
-	setupDragAndDrop();
+	// Initialize preview controller
+	if (window.Preview?.createPreview) {
+		previewController = window.Preview.createPreview({
+			editor,
+			previewEl: preview,
+			wordCountEl: wordCountDisplay,
+			parseMarkdown: (text) => marked.parse(text),
+			debounce
+		});
+	}
+
+	// Initialize files controller
+	if (window.Files?.createFiles) {
+		filesController = window.Files.createFiles({
+			editor,
+			fileInput,
+			uploadBtn,
+			copyMarkdownBtn,
+			dropZone,
+			editorPane,
+			showModal,
+			showToast,
+			handleEditorInput,
+			analyzeDocument
+		});
+		filesController.setupDragAndDrop();
+		filesController.attachListeners();
+	}
+
+	// Initialize Find & Replace controller
+	if (window.FindReplace?.createFindReplace) {
+		findReplaceController = window.FindReplace.createFindReplace({
+			editor,
+			findInput,
+			replaceInput,
+			caseSensitive,
+			wholeWord,
+			statusEl: findStatus,
+			panelEl: findReplacePanel
+		});
+	}
+
+	// Initialize formatting controller
+	if (window.Formatting?.createFormatting) {
+		formattingController = window.Formatting.createFormatting({
+			editor,
+			editorState,
+			saveToHistory,
+			handleEditorInput,
+			showUndoToast,
+			hideUndoToast
+		});
+	}
 
 	// Initial render
 	if (editor.value) {
-		updatePreview();
+		previewController?.updatePreview();
 		// Analyze loaded document
 	}
 
-	// Add debug helper to window for troubleshooting
-	window.resetSidebar = function () {
-		localStorage.removeItem('sidebarCollapsed');
-		sidebar.classList.remove('collapsed');
-		sidebar.classList.remove('show');
-		editorState.sidebarCollapsed = false;
-		console.log('Sidebar state reset. Page will reload.');
-		location.reload();
-	};
-
-	console.log('ReMarkAble loaded. Sidebar state:', editorState.sidebarCollapsed);
-	console.log('To reset sidebar if stuck, run: resetSidebar()');
+	// Debug helper removed for production polish.
 }
 
 // ===== Event Listeners Setup =====
@@ -167,7 +200,7 @@ function setupEventListeners() {
 
 	// Editor input
 	editor.addEventListener('input', handleEditorInput);
-	editor.addEventListener('scroll', handleEditorScroll);
+	editor.addEventListener('scroll', () => previewController?.syncScroll());
 
 	// Sidebar toggle
 	sidebarToggle.addEventListener('click', toggleSidebar);
@@ -230,14 +263,9 @@ function setupEventListeners() {
 		}
 	});
 
-	// Update dropdown checkmarks on editor input
-	let updateDropdownTimeout;
-	editor.addEventListener('input', () => {
-		clearTimeout(updateDropdownTimeout);
-		updateDropdownTimeout = setTimeout(() => {
-			updateTemplateDropdown();
-		}, 100);
-	});
+	// Update dropdown indicators on editor input
+	const debouncedUpdateTemplateDropdown = debounce(updateTemplateDropdown, 100);
+	editor.addEventListener('input', () => debouncedUpdateTemplateDropdown());
 
 	// Initial update
 	updateTemplateDropdown();
@@ -299,16 +327,13 @@ function setupEventListeners() {
 	formatButtons.forEach(btn => {
 		btn.addEventListener('click', () => {
 			const format = btn.dataset.format;
-			applyFormatting(format);
+			if (!format) return;
+			formattingController?.applyFormatting(format);
 		});
 	});
 
-	// File upload
-	uploadBtn.addEventListener('click', () => fileInput.click());
-	fileInput.addEventListener('change', handleFileUpload);
-
-	// Copy
-	copyMarkdownBtn.addEventListener('click', copyMarkdown);
+	// File upload / copy
+	filesController?.attachListeners();
 
 	// Validate Markdown
 	validateBtn.addEventListener('click', validateMarkdown);
@@ -320,13 +345,13 @@ function setupEventListeners() {
 	clearAllBtn.addEventListener('click', clearAll);
 
 	// Prettify
-	prettifyBtn.addEventListener('click', prettifyMarkdown);
+	prettifyBtn.addEventListener('click', () => formattingController?.prettifyMarkdown());
 
 	// Export
-	exportBtn.addEventListener('click', exportMarkdown);
+	exportBtn.addEventListener('click', () => filesController?.exportMarkdown());
 
 	// Undo (for prettify toast)
-	undoBtn.addEventListener('click', undoPrettify);
+	undoBtn.addEventListener('click', () => formattingController?.undoPrettify());
 
 	// Keyboard shortcuts
 	document.addEventListener('keydown', handleKeyboardShortcuts);
@@ -343,210 +368,43 @@ function setupEventListeners() {
 		}
 	});
 
-	// Find & Replace
-	findPrevBtn.addEventListener('click', () => performFind('prev'));
-	findNextBtn.addEventListener('click', () => performFind('next'));
-	replaceBtn.addEventListener('click', replaceCurrentMatch);
-	replaceAllBtn.addEventListener('click', replaceAll);
-	closeFindReplace.addEventListener('click', closeFindReplaceModal);
+		// Find & Replace (sidebar panel)
+		findPrevBtn.addEventListener('click', () => findReplaceController?.findPrev());
+		findNextBtn.addEventListener('click', () => findReplaceController?.findNext());
+		replaceBtn.addEventListener('click', () => findReplaceController?.replaceCurrent());
+		replaceAllBtn.addEventListener('click', () => findReplaceController?.replaceAll());
+		closeFindReplace.addEventListener('click', () => findReplaceController?.clear());
 
-	// Enter key handling for Find & Replace
-	findInput.addEventListener('keypress', (e) => {
-		if (e.key === 'Enter') performFind('next');
-	});
-	replaceInput.addEventListener('keypress', (e) => {
-		if (e.key === 'Enter') replaceCurrentMatch();
-	});
-
-	}
+		}
 
 // ===== Editor Input Handler =====
-let saveTimeout;
-let historyTimeout;
 const AUTOSAVE_DELAY = 1000;
 const HISTORY_DELAY = 3000; // Save to history every 3 seconds of inactivity
+
+const debounce = window.Utils?.debounce || ((fn) => fn);
+const debouncedAutoSave = debounce(() => {
+	if (persistenceController) {
+		persistenceController.saveContent();
+	}
+	updateSaveIndicator('saved');
+}, AUTOSAVE_DELAY);
+const debouncedHistorySave = debounce(() => saveToHistory(), HISTORY_DELAY);
 
 function handleEditorInput() {
 	editorState.content = editor.value;
 
 	// Update preview with debounce
-	updatePreview();
-
-	// Update section button indicators
-
+	previewController?.updatePreview();
 
 	// Auto-save with debounce
-	clearTimeout(saveTimeout);
 	updateSaveIndicator('saving');
-
-	saveTimeout = setTimeout(() => {
-		saveToLocalStorage();
-		updateSaveIndicator('saved');
-	}, AUTOSAVE_DELAY);
+	debouncedAutoSave();
 
 	// Save to undo history with longer debounce
-	clearTimeout(historyTimeout);
-	historyTimeout = setTimeout(() => {
-		saveToHistory();
-	}, HISTORY_DELAY);
+	debouncedHistorySave();
 }
 
-// ===== Preview Update =====
-let previewTimeout;
-const PREVIEW_DELAY = 300;
-
-function updatePreview() {
-	clearTimeout(previewTimeout);
-
-	previewTimeout = setTimeout(() => {
-		const content = editor.value;
-
-		// Update word count
-		updateWordCount(content);
-
-		if (!content.trim()) {
-			preview.innerHTML = '<div class="preview-placeholder"><p>Your formatted markdown will appear here...</p></div>';
-			return;
-		}
-
-		try {
-			const html = marked.parse(content);
-			preview.innerHTML = html;
-		} catch (error) {
-			console.error('Markdown parsing error:', error);
-			preview.innerHTML = '<div class="preview-placeholder"><p style="color: #ff6b6b;">Error parsing markdown</p></div>';
-		}
-	}, PREVIEW_DELAY);
-}
-
-// ===== Word Count =====
-function updateWordCount(content) {
-	if (!wordCountDisplay) return;
-
-	const text = content.trim();
-	const words = text ? text.split(/\s+/).filter(w => w.length > 0).length : 0;
-	const chars = content.length;
-	const lines = content.split('\n').length;
-
-	wordCountDisplay.innerHTML = `
-		<span class="count-item"><strong>${words}</strong> words</span>
-		<span class="count-separator">•</span>
-		<span class="count-item"><strong>${chars}</strong> chars</span>
-		<span class="count-separator">•</span>
-		<span class="count-item"><strong>${lines}</strong> lines</span>
-	`;
-}
-
-// ===== Scroll Sync =====
-function handleEditorScroll() {
-	if (window.innerWidth <= 1024) return; // Skip on mobile
-
-	const previewContent = document.querySelector('.preview-content');
-	if (!previewContent) return;
-
-	// Calculate proportional scroll
-	const editorScrollPercent = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
-	const previewScrollTarget = editorScrollPercent * (previewContent.scrollHeight - previewContent.clientHeight);
-
-	previewContent.scrollTop = previewScrollTarget;
-}
-
-// ===== Formatting Functions =====
-function applyFormatting(format) {
-	// Save current state before formatting
-	saveToHistory();
-
-	const start = editor.selectionStart;
-	const end = editor.selectionEnd;
-	const selectedText = editor.value.substring(start, end);
-	const currentContent = editor.value;
-	let replacement = '';
-	let cursorOffset = 0;
-
-	switch (format) {
-		case 'bold':
-			replacement = `**${selectedText || 'bold text'}**`;
-			cursorOffset = selectedText ? replacement.length : 2;
-			break;
-		case 'italic':
-			replacement = `*${selectedText || 'italic text'}*`;
-			cursorOffset = selectedText ? replacement.length : 1;
-			break;
-		case 'strike':
-			replacement = `~~${selectedText || 'strikethrough text'}~~`;
-			cursorOffset = selectedText ? replacement.length : 2;
-			break;
-		case 'code':
-			replacement = `\`${selectedText || 'code'}\``;
-			cursorOffset = selectedText ? replacement.length : 1;
-			break;
-		case 'link':
-			replacement = `[${selectedText || 'link text'}](url)`;
-			cursorOffset = selectedText ? replacement.length - 4 : 1;
-			break;
-		case 'h1':
-			replacement = `# ${selectedText || 'Heading 1'}`;
-			cursorOffset = replacement.length;
-			break;
-		case 'h2':
-			replacement = `## ${selectedText || 'Heading 2'}`;
-			cursorOffset = replacement.length;
-			break;
-		case 'h3':
-			replacement = `### ${selectedText || 'Heading 3'}`;
-			cursorOffset = replacement.length;
-			break;
-		case 'quote':
-			replacement = `> ${selectedText || 'Quote text'}`;
-			cursorOffset = replacement.length;
-			break;
-		case 'ul':
-			replacement = selectedText ? selectedText.split('\n').map(line => `- ${line}`).join('\n') : '- List item 1\n- List item 2\n- List item 3';
-			cursorOffset = replacement.length;
-			break;
-		case 'ol':
-			replacement = selectedText ? selectedText.split('\n').map((line, i) => `${i + 1}. ${line}`).join('\n') : '1. List item 1\n2. List item 2\n3. List item 3';
-			cursorOffset = replacement.length;
-			break;
-		case 'task':
-			replacement = selectedText ? selectedText.split('\n').map(line => `- [ ] ${line}`).join('\n') : '- [ ] Task 1\n- [ ] Task 2\n- [ ] Task 3';
-			cursorOffset = replacement.length;
-			break;
-		case 'codeblock':
-			replacement = `\`\`\`javascript\n${selectedText || '// Code here'}\n\`\`\``;
-			cursorOffset = selectedText ? replacement.length - 4 : 13;
-			break;
-		case 'table':
-			replacement = `| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |`;
-			cursorOffset = replacement.length;
-			break;
-		case 'hr':
-			replacement = '---';
-			cursorOffset = 3;
-			break;
-		case 'details':
-			replacement = `<details>\n<summary>${selectedText || 'Click to expand'}</summary>\n\nContent here\n\n</details>`;
-			cursorOffset = replacement.indexOf('Content here');
-			break;
-		default:
-			return;
-	}
-
-	// Insert formatted text
-	const newContent = currentContent.substring(0, start) + replacement + currentContent.substring(end);
-	editor.value = newContent;
-
-	// Set cursor position
-	const newCursorPos = start + cursorOffset;
-	editor.setSelectionRange(newCursorPos, newCursorPos);
-	editor.focus();
-
-	// Trigger update
-	handleEditorInput();
-
-	// Save new state immediately after formatting
-	saveToHistory();
-}
+// Preview/wordcount/scroll logic is handled by previewController.
 
 // ===== Document Analysis =====
 function analyzeDocument() {
@@ -688,10 +546,7 @@ function insertTemplate(templateName) {
 		templateDropdown.value = '';
 		insertTemplateBtn.disabled = true;
 
-		// Force another update after a brief delay to ensure checkmarks display
-		setTimeout(() => {
-			updateTemplateDropdown();
-		}, 50);
+		setTimeout(() => updateTemplateDropdown(), 50);
 
 		// Save new state to history immediately after insertion
 		saveToHistory();
@@ -726,165 +581,7 @@ async function processTemplateVariables(template, sectionName) {
 	return result;
 }
 
-// ===== File Upload =====
-function handleFileUpload(e) {
-	const file = e.target.files[0];
-	if (!file) return;
-
-	processFile(file);
-
-	// Reset input
-	fileInput.value = '';
-}
-
-function processFile(file) {
-	// Validate file extension
-	const validExtensions = ['.md', '.txt', '.markdown'];
-	const fileName = file.name.toLowerCase();
-	const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
-
-	// Validate MIME type
-	const validTypes = ['text/markdown', 'text/plain', ''];
-	const isValidType = validTypes.includes(file.type);
-
-	if (!isValidExtension || (!isValidType && file.type !== '')) {
-		showModal({
-			title: 'Invalid File',
-			message: 'Please select a valid markdown or text file (.md, .txt, .markdown)',
-			type: 'error'
-		});
-		return;
-	}
-
-	// Read file
-	const reader = new FileReader();
-	reader.onload = (evt) => {
-		editor.value = evt.target.result;
-		handleEditorInput();
-
-		// Analyze document and update section buttons
-
-
-		// Show helpful feedback
-		const analysis = analyzeDocument();
-		const foundCount = Object.values(analysis).filter(v => v).length;
-		const totalCount = Object.keys(sections).length;
-
-		if (foundCount > 0) {
-			showToast(`Document loaded! Found ${foundCount}/${totalCount} sections. Check section buttons for what's missing.`, 5000);
-		} else {
-			showToast('Document loaded! Click section buttons to add standard sections.', 4000);
-		}
-	};
-	reader.onerror = () => {
-		showModal({
-			title: 'Read Error',
-			message: 'Error reading file. Please try again.',
-			type: 'error'
-		});
-	};
-	reader.readAsText(file);
-}
-
-// ===== Drag and Drop =====
-function setupDragAndDrop() {
-	let dragCounter = 0;
-
-	// Prevent default drag behaviors on the whole page
-	['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-		document.body.addEventListener(eventName, preventDefaults, false);
-	});
-
-	function preventDefaults(e) {
-		e.preventDefault();
-		e.stopPropagation();
-	}
-
-	// Drag enter/over - show drop zone
-	editorPane.addEventListener('dragenter', (e) => {
-		preventDefaults(e);
-		dragCounter++;
-		if (e.dataTransfer.types.includes('Files')) {
-			dropZone.classList.add('active');
-		}
-	});
-
-	editorPane.addEventListener('dragover', (e) => {
-		preventDefaults(e);
-		if (e.dataTransfer.types.includes('Files')) {
-			dropZone.classList.add('active');
-		}
-	});
-
-	// Drag leave - hide drop zone
-	editorPane.addEventListener('dragleave', (e) => {
-		preventDefaults(e);
-		dragCounter--;
-		if (dragCounter === 0) {
-			dropZone.classList.remove('active');
-		}
-	});
-
-	// Drop - handle file
-	editorPane.addEventListener('drop', (e) => {
-		preventDefaults(e);
-		dragCounter = 0;
-		dropZone.classList.remove('active');
-
-		const files = e.dataTransfer.files;
-		if (files.length > 0) {
-			processFile(files[0]);
-		}
-	});
-}
-
-// ===== Prettify Markdown =====
-function prettifyMarkdown() {
-	const content = editor.value;
-	if (!content.trim()) return;
-
-	// Store snapshot for undo
-	editorState.prettifySnapshot = content;
-
-	let prettified = content;
-
-	// Normalize line endings
-	prettified = prettified.replace(/\r\n/g, '\n');
-
-	// Fix header spacing (add blank line before and after headers)
-	prettified = prettified.replace(/([^\n])\n(#{1,6} .+)/g, '$1\n\n$2');
-	prettified = prettified.replace(/(#{1,6} .+)\n([^\n#])/g, '$1\n\n$2');
-
-	// Normalize list indentation
-	prettified = prettified.replace(/^[ \t]*[-*+] /gm, '- ');
-	prettified = prettified.replace(/^[ \t]*(\d+)\. /gm, '$1. ');
-
-	// Remove trailing whitespace
-	prettified = prettified.replace(/[ \t]+$/gm, '');
-
-	// Normalize multiple blank lines to maximum 2
-	prettified = prettified.replace(/\n{3,}/g, '\n\n');
-
-	// Ensure single newline at end of file
-	prettified = prettified.replace(/\n*$/, '\n');
-
-	// Update editor
-	editor.value = prettified;
-	handleEditorInput();
-
-	// Show undo toast
-	showUndoToast();
-}
-
-// ===== Undo Prettify =====
-function undoPrettify() {
-	if (editorState.prettifySnapshot) {
-		editor.value = editorState.prettifySnapshot;
-		handleEditorInput();
-		hideUndoToast();
-		editorState.prettifySnapshot = null;
-	}
-}
+// File operations and prettify are handled by their controllers.
 
 // ===== Undo Action (General Undo) =====
 let undoHistory = [];
@@ -946,129 +643,7 @@ async function clearAll() {
 	}
 }
 
-// ===== Toast Notifications =====
-function showToast(message, duration = 3000) {
-	// Reuse the undo toast for general notifications
-	const toastMessage = undoToast.querySelector('span');
-	const undoButton = undoToast.querySelector('#undoBtn');
-
-	// Hide undo button for general toasts
-	undoButton.style.display = 'none';
-	toastMessage.textContent = message;
-
-	clearTimeout(editorState.undoTimeout);
-	undoToast.classList.add('show');
-
-	editorState.undoTimeout = setTimeout(() => {
-		hideUndoToast();
-	}, duration);
-}
-
-// ===== Undo Toast =====
-function showUndoToast() {
-	const undoButton = undoToast.querySelector('#undoBtn');
-	const toastMessage = undoToast.querySelector('span');
-
-	// Show undo button for prettify notifications
-	undoButton.style.display = 'inline-block';
-	toastMessage.textContent = 'Document prettified!';
-
-	clearTimeout(editorState.undoTimeout);
-	undoToast.classList.add('show');
-
-	editorState.undoTimeout = setTimeout(() => {
-		hideUndoToast();
-		editorState.prettifySnapshot = null;
-	}, 5000);
-}
-
-function hideUndoToast() {
-	undoToast.classList.remove('show');
-}
-
-// ===== Export Markdown =====
-function exportMarkdown() {
-	const content = editor.value;
-	if (!content.trim()) {
-		showModal({
-			title: 'Nothing to Export',
-			message: 'Please write some markdown first.',
-			type: 'info'
-		});
-		return;
-	}
-
-	// Generate filename from first H1 or use timestamp
-	let filename = 'document.md';
-	const h1Match = content.match(/^#\s+(.+)$/m);
-
-	if (h1Match && h1Match[1]) {
-		// Sanitize filename: replace spaces with hyphens, remove special chars
-		filename = h1Match[1]
-			.toLowerCase()
-			.replace(/[^a-z0-9\s-]/g, '')
-			.replace(/\s+/g, '-')
-			.replace(/-+/g, '-')
-			.replace(/^-|-$/g, '') + '.md';
-	} else {
-		// Use timestamp
-		const now = new Date();
-		filename = `markdown-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.md`;
-	}
-
-	// Create and download blob
-	const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement('a');
-	a.href = url;
-	a.download = filename;
-	document.body.appendChild(a);
-	a.click();
-	document.body.removeChild(a);
-	URL.revokeObjectURL(url);
-}
-
-// ===== Copy Markdown =====
-async function copyMarkdown() {
-	const content = editor.value;
-	if (!content.trim()) {
-		showModal({
-			title: 'Nothing to Copy',
-			message: 'Please write some markdown first.',
-			type: 'info'
-		});
-		return;
-	}
-
-	try {
-		await navigator.clipboard.writeText(content);
-
-		// Visual feedback - update button text temporarily
-		const originalHTML = copyMarkdownBtn.innerHTML;
-		copyMarkdownBtn.innerHTML = `
-			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<polyline points="20 6 9 17 4 12"></polyline>
-			</svg>
-			Copied!
-		`;
-		copyMarkdownBtn.style.borderColor = 'var(--accent-primary)';
-		copyMarkdownBtn.style.color = 'var(--accent-light)';
-
-		setTimeout(() => {
-			copyMarkdownBtn.innerHTML = originalHTML;
-			copyMarkdownBtn.style.borderColor = '';
-			copyMarkdownBtn.style.color = '';
-		}, 2000);
-
-		showToast('Markdown copied to clipboard!', 2000);
-	} catch (error) {
-		showModal({
-			title: 'Copy Failed',
-			message: 'Failed to copy to clipboard. Please try again.',
-			type: 'error'
-		});
-	}
-}
+// Toasts are handled by uiController.
 
 // ===== Markdown Validation =====
 function validateMarkdown() {
@@ -1136,74 +711,12 @@ function updateSaveIndicator(state) {
 	}
 }
 
-// ===== LocalStorage =====
-function saveToLocalStorage() {
-	try {
-		localStorage.setItem('markdown-content', editor.value);
-		localStorage.setItem('markdown-timestamp', Date.now());
-	} catch (e) {
-		if (e.name === 'QuotaExceededError') {
-			console.error('LocalStorage quota exceeded');
-			showModal({
-				title: 'Storage Full',
-				message: 'Storage quota exceeded. Your content may not be saved.',
-				type: 'warning'
-			});
-		}
-	}
-}
-
-function loadFromLocalStorage() {
-	// Load content
-	const savedContent = localStorage.getItem('markdown-content');
-	if (savedContent) {
-		editor.value = savedContent;
-		editorState.content = savedContent;
-		// Initialize history with loaded content
-		saveToHistory();
-	}
-
-	// FORCE sidebar to start open - ignore localStorage for now
-	editorState.sidebarCollapsed = false;
-	sidebar.classList.remove('collapsed');
-	sidebar.classList.remove('show');
-
-	// Clear any stuck localStorage state
-	localStorage.removeItem('sidebarCollapsed');
-
-	// For mobile, keep it hidden by default
-	if (window.innerWidth <= 768) {
-		sidebar.classList.remove('show');
-	}
-}
-
-function loadTemplateVariables() {
-	const savedVars = localStorage.getItem('templateVariables');
-	if (savedVars) {
-		try {
-			const vars = JSON.parse(savedVars);
-			if (vars.projectNameInput) document.getElementById('projectNameInput').value = vars.projectNameInput;
-			if (vars.usernameInput) document.getElementById('usernameInput').value = vars.usernameInput;
-			if (vars.repoInput) document.getElementById('repoInput').value = vars.repoInput;
-			if (vars.ticketNumberInput) document.getElementById('ticketNumberInput').value = vars.ticketNumberInput;
-			if (vars.prTitleInput) document.getElementById('prTitleInput').value = vars.prTitleInput;
-			if (vars.apiUrlInput) document.getElementById('apiUrlInput').value = vars.apiUrlInput;
-			if (vars.contactEmailInput) document.getElementById('contactEmailInput').value = vars.contactEmailInput;
-			if (vars.projectDescInput) document.getElementById('projectDescInput').value = vars.projectDescInput;
-			if (vars.licenseTypeInput) document.getElementById('licenseTypeInput').value = vars.licenseTypeInput;
-		} catch (e) {
-			console.error('Error loading template variables:', e);
-		}
-	}
-}
-
-
 // ===== Keyboard Shortcuts =====
 function handleKeyboardShortcuts(e) {
 	// Ctrl+S: Save manually
 	if (e.ctrlKey && e.key === 's') {
 		e.preventDefault();
-		saveToLocalStorage();
+		persistenceController?.saveContent();
 		updateSaveIndicator('saved');
 		return;
 	}
@@ -1218,7 +731,7 @@ function handleKeyboardShortcuts(e) {
 	// Ctrl+E: Export
 	if (e.ctrlKey && e.key === 'e') {
 		e.preventDefault();
-		exportMarkdown();
+		filesController?.exportMarkdown();
 		return;
 	}
 
@@ -1232,14 +745,14 @@ function handleKeyboardShortcuts(e) {
 	// Ctrl+Shift+F: Prettify
 	if (e.ctrlKey && e.shiftKey && e.key === 'F') {
 		e.preventDefault();
-		prettifyMarkdown();
+		formattingController?.prettifyMarkdown();
 		return;
 	}
 
 	// Ctrl+Z: Undo prettify (only if snapshot exists)
 	if (e.ctrlKey && e.key === 'z' && editorState.prettifySnapshot) {
 		e.preventDefault();
-		undoPrettify();
+		formattingController?.undoPrettify();
 		return;
 	}
 
@@ -1253,194 +766,9 @@ function handleKeyboardShortcuts(e) {
 	// Ctrl+H: Find & Replace
 	if (e.ctrlKey && e.key === 'h') {
 		e.preventDefault();
-		openFindReplace();
+		findReplaceController?.open();
 		return;
 	}
-}
-
-// ===== Find & Replace Functions =====
-function escapeRegex(text) {
-	return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function openFindReplace() {
-	if (findStatus) {
-		findStatus.textContent = '';
-		findStatus.className = 'find-replace-status';
-	}
-	findMatches = [];
-	currentMatchIndex = -1;
-
-	if (findReplacePanel) {
-		findReplacePanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-	}
-
-	setTimeout(() => findInput?.focus(), 50);
-}
-
-function closeFindReplaceModal() {
-	if (findInput) findInput.value = '';
-	if (replaceInput) replaceInput.value = '';
-	if (findStatus) {
-		findStatus.textContent = '';
-		findStatus.className = 'find-replace-status';
-	}
-	findMatches = [];
-	currentMatchIndex = -1;
-	clearHighlights();
-}
-
-function performFind(direction = 'next') {
-	const searchText = findInput.value;
-	if (!searchText) {
-		findStatus.textContent = 'Enter text to find';
-		findStatus.className = 'find-replace-status error';
-		return;
-	}
-
-	const content = editor.value;
-	const isCaseSensitive = caseSensitive.checked;
-	const isWholeWord = wholeWord.checked;
-
-	// Build search pattern
-	const escapedSearch = escapeRegex(searchText);
-	let pattern = escapedSearch;
-	if (isWholeWord) {
-		pattern = `\\b${pattern}\\b`;
-	}
-
-	const flags = isCaseSensitive ? 'g' : 'gi';
-	const regex = new RegExp(pattern, flags);
-
-	// Find all matches
-	findMatches = [];
-	let match;
-	while ((match = regex.exec(content)) !== null) {
-		findMatches.push({
-			index: match.index,
-			length: match[0].length
-		});
-	}
-
-	if (findMatches.length === 0) {
-		findStatus.textContent = 'No matches found';
-		findStatus.className = 'find-replace-status error';
-		currentMatchIndex = -1;
-		return;
-	}
-
-	// Navigate to match
-	if (direction === 'next') {
-		currentMatchIndex = (currentMatchIndex + 1) % findMatches.length;
-	} else {
-		currentMatchIndex = currentMatchIndex <= 0 ? findMatches.length - 1 : currentMatchIndex - 1;
-	}
-
-	selectMatch(currentMatchIndex);
-}
-
-function selectMatch(index) {
-	if (index < 0 || index >= findMatches.length) return;
-
-	const match = findMatches[index];
-	editor.focus();
-	editor.setSelectionRange(match.index, match.index + match.length);
-	editor.scrollTop = editor.scrollHeight * (match.index / editor.value.length);
-
-	findStatus.textContent = `Match ${index + 1} of ${findMatches.length}`;
-	findStatus.className = 'find-replace-status success';
-}
-
-function clearHighlights() {
-	// Reset selection
-	if (editor.selectionStart !== editor.selectionEnd) {
-		editor.setSelectionRange(editor.selectionStart, editor.selectionStart);
-	}
-}
-
-function replaceCurrentMatch() {
-	if (currentMatchIndex < 0 || currentMatchIndex >= findMatches.length) {
-		findStatus.textContent = 'No match selected';
-		findStatus.className = 'find-replace-status error';
-		return;
-	}
-
-	const replaceText = replaceInput.value;
-	const match = findMatches[currentMatchIndex];
-	const content = editor.value;
-
-	// Replace the match
-	const newContent = content.substring(0, match.index) +
-		replaceText +
-		content.substring(match.index + match.length);
-
-	editor.value = newContent;
-	handleEditorInput();
-
-	// Update matches after replacement
-	const lengthDiff = replaceText.length - match.length;
-	findMatches.splice(currentMatchIndex, 1);
-
-	// Adjust subsequent match positions
-	for (let i = currentMatchIndex; i < findMatches.length; i++) {
-		findMatches[i].index += lengthDiff;
-	}
-
-	// Update status
-	if (findMatches.length === 0) {
-		findStatus.textContent = 'All matches replaced';
-		findStatus.className = 'find-replace-status success';
-		currentMatchIndex = -1;
-	} else {
-		// Move to next match or wrap to first
-		currentMatchIndex = currentMatchIndex >= findMatches.length ? 0 : currentMatchIndex;
-		selectMatch(currentMatchIndex);
-	}
-}
-
-function replaceAll() {
-	const searchText = findInput.value;
-	const replaceText = replaceInput.value;
-
-	if (!searchText) {
-		findStatus.textContent = 'Enter text to find';
-		findStatus.className = 'find-replace-status error';
-		return;
-	}
-
-	const content = editor.value;
-	const isCaseSensitive = caseSensitive.checked;
-	const isWholeWord = wholeWord.checked;
-
-	// Build search pattern
-	let pattern = escapeRegex(searchText);
-	if (isWholeWord) {
-		pattern = `\\b${pattern}\\b`;
-	}
-
-	const flags = isCaseSensitive ? 'g' : 'gi';
-	const regex = new RegExp(pattern, flags);
-
-	// Count matches first
-	const matches = content.match(regex);
-	if (!matches || matches.length === 0) {
-		findStatus.textContent = 'No matches found';
-		findStatus.className = 'find-replace-status error';
-		return;
-	}
-
-	// Replace all
-	const newContent = content.replace(regex, replaceText);
-	editor.value = newContent;
-	handleEditorInput();
-
-	// Update status
-	findStatus.textContent = `Replaced ${matches.length} occurrence${matches.length > 1 ? 's' : ''}`;
-	findStatus.className = 'find-replace-status success';
-
-	// Clear matches
-	findMatches = [];
-	currentMatchIndex = -1;
 }
 
 // ===== Start Application =====
